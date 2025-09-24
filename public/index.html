@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Jinnie Chats</title>
+  <title>WhatsApp Chat</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -33,13 +33,18 @@
     </div>
     <div id="status-bar" class="status-bar hidden"></div>
     <div class="chat-body" id="chat-body"></div>
+
+    <!-- Updated chat footer -->
     <div class="chat-footer">
-      <div id="typing-indicator" class="typing-indicator hidden"></div>
       <input id="message-input" type="text" placeholder="Type a message..." />
+      <div class="chat-buttons">
+        <button id="file-btn">📎</button>
+        <button id="send-btn">➤</button>
+      </div>
       <input type="file" id="file-input" hidden />
-      <button id="file-btn">📎</button>
-      <button id="send-btn">➤</button>
     </div>
+
+    <div id="typing-indicator" class="typing-indicator hidden"></div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
