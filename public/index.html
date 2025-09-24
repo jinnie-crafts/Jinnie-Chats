@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Jinnie Chats</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Username modal -->
+  <div id="username-modal" class="modal">
+    <div class="modal-content">
+      <h2>Enter your name</h2>
+      <input id="username-input" type="text" placeholder="Your name" />
+      <button id="username-btn">Next</button>
+    </div>
+  </div>
+
+  <!-- Room selection modal -->
+  <div id="room-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Choose a Room</h2>
+      <ul id="room-list"></ul>
+      <input id="new-room-input" type="text" placeholder="Or create a new room" />
+      <button id="new-room-btn">Join / Create Room</button>
+    </div>
+  </div>
+
+  <!-- Chat UI -->
+  <div class="chat-container hidden">
+    <div class="chat-header">
+      <h3 id="chat-title">WhatsApp Chat</h3>
+    </div>
+    <div id="status-bar" class="status-bar hidden"></div>
+    <div class="chat-body" id="chat-body"></div>
+    <div class="chat-footer">
+      <div id="typing-indicator" class="typing-indicator hidden"></div>
+      <input id="message-input" type="text" placeholder="Type a message..." />
+      <input type="file" id="file-input" hidden />
+      <button id="file-btn">📎</button>
+      <button id="send-btn">➤</button>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
