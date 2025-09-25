@@ -46,11 +46,13 @@ function joinRoom(roomName){
   socket.emit("join room", room, username);
 }
 
+// New room creation
 newRoomBtn.addEventListener("click", () => {
   const roomName = newRoomInput.value.trim();
   if(roomName) joinRoom(roomName);
 });
 
+// Room list update
 socket.on("room list", rooms => {
   roomList.innerHTML = "";
   rooms.forEach(r => {
@@ -107,6 +109,14 @@ function formatTime(date){ const d=new Date(date); let h=d.getHours(), m=d.getMi
 
 function scrollToBottom(){ chatBody.scrollTop=chatBody.scrollHeight; }
 
+// Dynamic padding adjustment
+function adjustChatPadding() {
+  const footer = document.querySelector(".chat-footer");
+  if (footer) {
+    chatBody.style.paddingBottom = footer.offsetHeight + 10 + "px"; // +10px margin
+  }
+}
+
 function addMessage(user, text, timestamp=new Date(), delivered=false){
   const msg=document.createElement("div");
   msg.classList.add("message", user===username?"user":"other");
@@ -114,6 +124,7 @@ function addMessage(user, text, timestamp=new Date(), delivered=false){
   const checkmarks = user===username? `<span class="checkmarks">${delivered?"✅✅":"✅"}</span>`:"";
   msg.innerHTML=`<strong>${user}:</strong> ${text} ${checkmarks}<span class="timestamp">${time}</span>`;
   chatBody.appendChild(msg);
+  adjustChatPadding();
   scrollToBottom();
 }
 
@@ -127,6 +138,7 @@ function addFileMessage(user, data){
     msg.innerHTML=`<strong>${user}:</strong><br><a href="${data.fileData}" download="${data.fileName}">${data.fileName}</a><span class="timestamp">${time}</span>`;
   }
   chatBody.appendChild(msg);
+  adjustChatPadding();
   scrollToBottom();
 }
 
@@ -138,6 +150,7 @@ function addSystemMessage(text){
   msg.style.color="#666";
   msg.textContent=text;
   chatBody.appendChild(msg);
+  adjustChatPadding();
   scrollToBottom();
 }
 
@@ -147,6 +160,7 @@ socket.on("chat history", messages=>{
     if(msg.text) addMessage(msg.user,msg.text,msg.timestamp);
     else if(msg.fileName) addFileMessage(msg.user,msg);
   });
+  adjustChatPadding();
   scrollToBottom();
 });
 
@@ -155,5 +169,9 @@ socket.on("file upload", data=>addFileMessage(data.user,data));
 socket.on("user joined", user=>addSystemMessage(`${user} joined the room`));
 socket.on("user left", user=>addSystemMessage(`${user} left the room`));
 
-// Scroll to bottom on window resize (keyboard open)
-window.addEventListener("resize", scrollToBottom);
+// Adjust padding on load/resize
+window.addEventListener("load", adjustChatPadding);
+window.addEventListener("resize", () => {
+  adjustChatPadding();
+  scrollToBottom();
+});

@@ -42,6 +42,7 @@ html, body {
   display:flex;
   flex-direction:column;
   overflow:hidden;
+  position: relative; /* Needed for typing indicator */
 }
 
 /* Chat header */
@@ -110,12 +111,15 @@ html, body {
   color:#4fc3f7;
 }
 
-/* Typing indicator */
+/* Typing indicator fixed above footer */
 .typing-indicator {
-  font-size:0.8em;
-  color:#555;
-  margin:5px 10px;
-  font-style:italic;
+  position: absolute;
+  bottom: 65px;   /* just above footer */
+  left: 10px;
+  font-size: 0.8em;
+  color: #555;
+  font-style: italic;
+  z-index: 50;
 }
 .typing-indicator.hidden { display:none; }
 
@@ -132,11 +136,18 @@ html, body {
 /* Chat footer */
 .chat-footer {
   display:flex;
-  padding:8px;
+  padding:10px;
+  height:60px;             /* fixed height */
   background:#f0f0f0;
   align-items:center;
   gap:5px;
   flex-shrink: 0;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  max-width: 400px;
+  z-index: 100;
 }
 
 #message-input {
@@ -170,17 +181,6 @@ html, body {
 @media (max-width:600px) {
   .chat-container {
     height:100vh;
-  }
-  .chat-body {
-    padding-bottom:10px;
-  }
-  .chat-footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    max-width: 400px;
-    z-index: 100;
   }
   .message { max-width:80%; padding:8px 10px; }
   .message img { max-width:120px; }
