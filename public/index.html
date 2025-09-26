@@ -8,6 +8,7 @@
   <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
+
   <!-- Username Modal -->
   <div id="username-modal" class="modal">
     <div class="modal-content">
@@ -22,19 +23,43 @@
     <div class="modal-content">
       <h3>Select or Create a Room</h3>
       <ul id="room-list"></ul>
-      <input type="text" id="new-room-input" placeholder="New room name">
-      <button id="new-room-btn">Create & Join</button>
+
+      <!-- Create Room -->
+      <div class="room-section create-room">
+        <h3>Create a New Room</h3>
+        <input type="text" id="new-room-input" placeholder="Room Name" class="input-field">
+        <div class="password-wrapper">
+          <input type="password" id="new-room-password" placeholder="Set Room Password" class="input-field">
+          <span class="toggle-password" onclick="togglePassword('new-room-password')">👁️</span>
+        </div>
+        <button id="new-room-btn" class="room-btn">Create & Join</button>
+      </div>
+
+      <!-- Join Room -->
+      <div class="room-section join-room hidden" id="join-password-container">
+        <h3>Join Room</h3>
+        <div class="password-wrapper">
+          <input type="password" id="join-room-password" placeholder="Enter Room Password" class="input-field">
+          <span class="toggle-password" onclick="togglePassword('join-room-password')">👁️</span>
+        </div>
+        <div id="password-alert" class="password-alert hidden">Incorrect password</div>
+        <button id="join-room-btn" class="room-btn">Join Room</button>
+      </div>
     </div>
   </div>
 
   <!-- Chat Container -->
   <div class="chat-container hidden">
     <div class="chat-header">
-      <span id="chat-title">Jinnie Chat</span>
+      <div id="chat-title">Jinnie Chat</div>
+      <div id="chat-subtitle"></div>
+      <button id="invite-btn" class="invite-btn">➕ Invite</button>
     </div>
+
     <div id="status-bar" class="status-bar hidden"></div>
     <div class="chat-body" id="chat-body"></div>
     <div id="typing-indicator" class="typing-indicator hidden"></div>
+
     <div class="chat-footer">
       <input type="text" id="message-input" placeholder="Type a message">
       <div class="chat-buttons">
@@ -44,6 +69,21 @@
       </div>
     </div>
   </div>
+
+  <!-- Invite Modal -->
+  <div id="inviteModal" class="modal hidden">
+    <div class="modal-content">
+      <span class="close-btn" id="close-invite">&times;</span>
+      <h3>Share this link to invite your friend</h3>
+      <div class="invite-box">
+        <input type="text" id="invite-url" readonly />
+        <button id="copy-btn">Copy</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast hidden">Link copied!</div>
 
   <script src="script.js"></script>
 </body>

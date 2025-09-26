@@ -1,177 +1,161 @@
 const socket = io({ reconnection:true, reconnectionAttempts: Infinity, reconnectionDelay:1000 });
 
-let username = null;
-let room = null;
+let username=null, room=null;
 
 // Elements
-const usernameModal = document.getElementById("username-modal");
-const usernameInput = document.getElementById("username-input");
-const usernameBtn = document.getElementById("username-btn");
+const usernameModal=document.getElementById("username-modal");
+const usernameInput=document.getElementById("username-input");
+const usernameBtn=document.getElementById("username-btn");
 
-const roomModal = document.getElementById("room-modal");
-const roomList = document.getElementById("room-list");
-const newRoomInput = document.getElementById("new-room-input");
-const newRoomBtn = document.getElementById("new-room-btn");
+const roomModal=document.getElementById("room-modal");
+const roomList=document.getElementById("room-list");
+const newRoomInput=document.getElementById("new-room-input");
+const newRoomPassword=document.getElementById("new-room-password");
+const newRoomBtn=document.getElementById("new-room-btn");
+const joinPasswordContainer=document.getElementById("join-password-container");
+const joinRoomPassword=document.getElementById("join-room-password");
+const joinRoomBtn=document.getElementById("join-room-btn");
+const passwordAlert=document.getElementById("password-alert");
 
-const chatContainer = document.querySelector(".chat-container");
-const chatBody = document.getElementById("chat-body");
-const chatTitle = document.getElementById("chat-title");
-const input = document.getElementById("message-input");
-const sendBtn = document.getElementById("send-btn");
-const fileBtn = document.getElementById("file-btn");
-const fileInput = document.getElementById("file-input");
+const chatContainer=document.querySelector(".chat-container");
+const chatBody=document.getElementById("chat-body");
+const chatTitle=document.getElementById("chat-title");
+const chatSubtitle=document.getElementById("chat-subtitle");
+const input=document.getElementById("message-input");
+const sendBtn=document.getElementById("send-btn");
+const fileBtn=document.getElementById("file-btn");
+const fileInput=document.getElementById("file-input");
 
-const statusBar = document.getElementById("status-bar");
-const typingIndicator = document.getElementById("typing-indicator");
+const statusBar=document.getElementById("status-bar");
+const typingIndicator=document.getElementById("typing-indicator");
 
+const inviteBtn=document.getElementById("invite-btn");
+const inviteModal=document.getElementById("inviteModal");
+const closeInvite=document.getElementById("close-invite");
+const inviteUrlInput=document.getElementById("invite-url");
+const copyBtn=document.getElementById("copy-btn");
+
+const toast=document.getElementById("toast");
 let typingTimeout;
 
-// ===== Username & Room =====
-usernameBtn.addEventListener("click", () => {
-  const name = usernameInput.value.trim();
-  if(name!=="") {
-    username = name;
-    usernameModal.classList.add("hidden");
-    roomModal.classList.remove("hidden");
+// ===== Password Toggle =====
+function togglePassword(fieldId){
+  const input = document.getElementById(fieldId);
+  input.type = input.type==="password"?"text":"password";
+}
+
+// ===== Username =====
+usernameBtn.addEventListener("click",()=>{
+  const name=usernameInput.value.trim();
+  if(name){ username=name; usernameModal.classList.add("hidden"); roomModal.classList.remove("hidden"); }
+});
+
+// ===== Room Creation =====
+newRoomBtn.addEventListener("click",()=>{
+  const r=newRoomInput.value.trim();
+  const p=newRoomPassword.value.trim();
+  if(r && p){ socket.emit("create room", r, p, username); }
+});
+
+// ===== Join Existing Room =====
+roomList.addEventListener("click", e=>{
+  if(e.target.tagName==="LI"){
+    const selectedRoom=e.target.textContent;
+    joinPasswordContainer.classList.remove("hidden");
+    joinRoomBtn.onclick=()=>{
+      const pwd=joinRoomPassword.value;
+      socket.emit("join room request", selectedRoom, pwd, username);
+    }
   }
 });
 
-function joinRoom(roomName){
-  if(!username) return alert("Please enter your name first!");
-  room = roomName;
-  roomModal.classList.add("hidden");
-  chatContainer.classList.remove("hidden");
-  chatTitle.textContent = `Room: ${room} (${username})`;
-  chatBody.innerHTML = "";
-  socket.emit("join room", room, username);
-}
-
-// New room creation
-newRoomBtn.addEventListener("click", () => {
-  const roomName = newRoomInput.value.trim();
-  if(roomName) joinRoom(roomName);
-});
-
-// Room list update
-socket.on("room list", rooms => {
-  roomList.innerHTML = "";
-  rooms.forEach(r => {
-    const li = document.createElement("li");
-    li.textContent = r;
-    li.addEventListener("click", ()=>joinRoom(r));
+// ===== Socket Events =====
+socket.on("room list",rooms=>{
+  roomList.innerHTML="";
+  rooms.forEach(r=>{
+    const li=document.createElement("li");
+    li.textContent=r;
     roomList.appendChild(li);
   });
 });
 
-// ===== Chat =====
-sendBtn.addEventListener("click", ()=> {
-  if(input.value.trim()) {
-    socket.emit("chat message", input.value);
-    input.value="";
-  }
-});
-input.addEventListener("keypress",(e)=>{ if(e.key==="Enter") sendBtn.click(); });
+socket.on("wrong password",()=>{ passwordAlert.classList.remove("hidden"); });
 
-fileBtn.addEventListener("click", ()=>fileInput.click());
-fileInput.addEventListener("change", ()=>{
-  const file = fileInput.files[0];
+socket.on("room joined", roomName=>{
+  room=roomName;
+  chatContainer.classList.remove("hidden");
+  roomModal.classList.add("hidden");
+  chatTitle.textContent="Jinnie Chat";
+  chatSubtitle.textContent=`Room: ${room} (${username})`;
+});
+
+// ===== Chat =====
+sendBtn.addEventListener("click",()=>{ if(input.value.trim()){ socket.emit("chat message", input.value); input.value=""; }});
+input.addEventListener("keypress", e=>{ if(e.key==="Enter") sendBtn.click(); });
+
+// ===== File Sharing =====
+fileBtn.addEventListener("click",()=>fileInput.click());
+fileInput.addEventListener("change",()=>{
+  const file=fileInput.files[0];
   if(file){
-    const reader = new FileReader();
-    reader.onload = ()=> socket.emit("file upload", { fileName:file.name, fileData:reader.result, fileType:file.type });
+    const reader=new FileReader();
+    reader.onload=()=>socket.emit("file upload",{fileName:file.name,fileData:reader.result,fileType:file.type});
     reader.readAsDataURL(file);
   }
 });
 
-// Typing
-input.addEventListener("input", ()=>{
+// ===== Typing =====
+input.addEventListener("input",()=>{
   socket.emit("typing", username);
   clearTimeout(typingTimeout);
-  typingTimeout = setTimeout(()=>socket.emit("stop typing", username), 1000);
+  typingTimeout=setTimeout(()=>socket.emit("stop typing", username),1000);
 });
-
-socket.on("typing", user => { if(user!==username){ typingIndicator.textContent = `${user} is typing...`; typingIndicator.classList.remove("hidden"); }});
-socket.on("stop typing", user => { if(user!==username) typingIndicator.classList.add("hidden"); });
-
-// Status
-function showStatus(msg){ statusBar.textContent=msg; statusBar.classList.remove("hidden"); }
-function hideStatus(){ statusBar.classList.add("hidden"); }
-
-socket.on("connect_error", ()=>showStatus("⚠️ Server offline / reconnecting..."));
-socket.on("disconnect", ()=>showStatus("⚠️ Server disconnected / reconnecting..."));
-socket.on("reconnect", ()=>{
-  hideStatus();
-  addSystemMessage("✅ Reconnected to server");
-  if(username && room) socket.emit("join room", room, username);
-});
+socket.on("typing", user=>{ if(user!==username){ typingIndicator.textContent=`${user} is typing...`; typingIndicator.classList.remove("hidden"); }});
+socket.on("stop typing", user=>{ if(user!==username) typingIndicator.classList.add("hidden"); });
 
 // ===== Messages =====
-function formatTime(date){ const d=new Date(date); let h=d.getHours(), m=d.getMinutes(); const ampm=h>=12?"PM":"AM"; h=h%12||12; if(m<10)m="0"+m; return `${h}:${m} ${ampm}`; }
-
+function formatTime(date){ const d=new Date(date); let h=d.getHours(),m=d.getMinutes(); const ampm=h>=12?"PM":"AM"; h=h%12||12; if(m<10)m="0"+m; return `${h}:${m} ${ampm}`; }
 function scrollToBottom(){ chatBody.scrollTop=chatBody.scrollHeight; }
 
-// Dynamic padding adjustment
-function adjustChatPadding() {
-  const footer = document.querySelector(".chat-footer");
-  if (footer) {
-    chatBody.style.paddingBottom = footer.offsetHeight + 10 + "px"; // +10px margin
-  }
-}
-
-function addMessage(user, text, timestamp=new Date(), delivered=false){
+function addMessage(user,text){
   const msg=document.createElement("div");
-  msg.classList.add("message", user===username?"user":"other");
-  const time=formatTime(timestamp);
-  const checkmarks = user===username? `<span class="checkmarks">${delivered?"✅✅":"✅"}</span>`:"";
-  msg.innerHTML=`<strong>${user}:</strong> ${text} ${checkmarks}<span class="timestamp">${time}</span>`;
+  msg.classList.add("message",user===username?"user":"other");
+  const time=formatTime(new Date());
+  msg.innerHTML=`<strong>${user}:</strong> ${text} <span class="timestamp">${time}</span>`;
   chatBody.appendChild(msg);
-  adjustChatPadding();
   scrollToBottom();
 }
 
-function addFileMessage(user, data){
+function addFileMessage(user,data){
   const msg=document.createElement("div");
-  msg.classList.add("message", user===username?"user":"other");
-  const time=formatTime(data.timestamp||new Date());
-  if(data.fileType.startsWith("image/")){
-    msg.innerHTML=`<strong>${user}:</strong><br><img src="${data.fileData}" alt="${data.fileName}" /><span class="timestamp">${time}</span>`;
-  }else{
-    msg.innerHTML=`<strong>${user}:</strong><br><a href="${data.fileData}" download="${data.fileName}">${data.fileName}</a><span class="timestamp">${time}</span>`;
-  }
+  msg.classList.add("message",user===username?"user":"other");
+  let fileContent="";
+  if(data.fileType.startsWith("image/")) fileContent=`<img src="${data.fileData}" />`;
+  else fileContent=`<a href="${data.fileData}" download="${data.fileName}">${data.fileName}</a>`;
+  const time=formatTime(new Date());
+  msg.innerHTML=`<strong>${user}:</strong><br>${fileContent}<span class="timestamp">${time}</span>`;
   chatBody.appendChild(msg);
-  adjustChatPadding();
   scrollToBottom();
 }
 
-function addSystemMessage(text){
-  const msg=document.createElement("div");
-  msg.classList.add("message");
-  msg.style.textAlign="center";
-  msg.style.background="transparent";
-  msg.style.color="#666";
-  msg.textContent=text;
-  chatBody.appendChild(msg);
-  adjustChatPadding();
-  scrollToBottom();
-}
+socket.on("chat message", data=>addMessage(data.user||"Unknown",data.text||data));
+socket.on("file message", data=>addFileMessage(data.user||"Unknown",data));
 
-// Socket events
-socket.on("chat history", messages=>{
-  messages.forEach(msg=>{
-    if(msg.text) addMessage(msg.user,msg.text,msg.timestamp);
-    else if(msg.fileName) addFileMessage(msg.user,msg);
-  });
-  adjustChatPadding();
-  scrollToBottom();
+// ===== Invite =====
+function setInviteUrl(){ inviteUrlInput.value=`${window.location.origin}?room=${room}`; }
+inviteBtn.addEventListener("click",()=>{ setInviteUrl(); inviteModal.classList.remove("hidden"); });
+closeInvite.addEventListener("click",()=>inviteModal.classList.add("hidden"));
+copyBtn.addEventListener("click",()=>{
+  inviteUrlInput.select();
+  document.execCommand("copy");
+  inviteModal.classList.add("hidden");
+  showToast("Link copied!");
 });
 
-socket.on("chat message", data=>addMessage(data.user,data.text,data.timestamp,data.user===username));
-socket.on("file upload", data=>addFileMessage(data.user,data));
-socket.on("user joined", user=>addSystemMessage(`${user} joined the room`));
-socket.on("user left", user=>addSystemMessage(`${user} left the room`));
-
-// Adjust padding on load/resize
-window.addEventListener("load", adjustChatPadding);
-window.addEventListener("resize", () => {
-  adjustChatPadding();
-  scrollToBottom();
-});
+// ===== Toast =====
+function showToast(message,duration=1500){
+  toast.textContent=message;
+  toast.classList.remove("hidden");
+  toast.classList.add("show");
+  setTimeout(()=>{ toast.classList.remove("show"); setTimeout(()=>toast.classList.add("hidden"),300); },duration);
+}
