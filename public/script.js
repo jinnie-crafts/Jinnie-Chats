@@ -159,3 +159,13 @@ function showToast(message,duration=1500){
   toast.classList.add("show");
   setTimeout(()=>{ toast.classList.remove("show"); setTimeout(()=>toast.classList.add("hidden"),300); },duration);
 }
+
+//splash screen
+window.addEventListener("load", ()=>{
+  const splash = document.getElementById("splash-screen");
+  // Show splash for 2 seconds
+  setTimeout(()=>{
+    splash.classList.add("fade-out");
+    setTimeout(()=>{ splash.style.display = "none"; }, 800); // hide after fade-out
+  }, 2000); // 2 seconds delay
+});
