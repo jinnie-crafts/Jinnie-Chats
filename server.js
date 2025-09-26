@@ -5,52 +5,85 @@ const io = require("socket.io")(http);
 
 app.use(express.static("public"));
 
-const rooms = {}; // { roomName: { password, users: [] } }
+// In-memory rooms: { roomName: { password, users: [] } }
+const rooms = {};
 
+// Socket.io connection
 io.on("connection", socket => {
 
-  // Create Room
-  socket.on("create room", (roomName,password,username)=>{
-    if(!rooms[roomName]) rooms[roomName]={password,users:[]};
+  // Send existing rooms to new clients
+  socket.emit("room list", Object.keys(rooms));
+
+  // Create room
+  socket.on("create room", (roomName, password, username) => {
+    if (!rooms[roomName]) {
+      rooms[roomName] = { password, users: [] };
+    }
+
     socket.join(roomName);
     rooms[roomName].users.push(username);
+
+    // Notify the creator
     socket.emit("room joined", roomName);
+
+    // Notify other users in the room
     socket.to(roomName).emit("chat message", `${username} has joined the chat`);
+
+    // Update all clients with new room list
     io.emit("room list", Object.keys(rooms));
   });
 
-  // Join Room
-  socket.on("join room request", (roomName,password,username)=>{
-    if(!rooms[roomName]) return socket.emit("error","Room does not exist");
-    if(rooms[roomName].password !== password) return socket.emit("wrong password");
+  // Join existing room
+  socket.on("join room request", (roomName, password, username) => {
+    if (!rooms[roomName]) return socket.emit("error", "Room does not exist");
+
+    if (rooms[roomName].password !== password) return socket.emit("wrong password");
+
     socket.join(roomName);
     rooms[roomName].users.push(username);
+
+    // Notify the joining user
     socket.emit("room joined", roomName);
+
+    // Notify others in the room
     socket.to(roomName).emit("chat message", `${username} has joined the chat`);
   });
 
   // Chat messages
-  socket.on("chat message", msg=>{
-    const roomsJoined = Array.from(socket.rooms).filter(r=>r!==socket.id);
-    roomsJoined.forEach(r=>socket.to(r).emit("chat message",{user:"Unknown",text:msg}));
+  socket.on("chat message", msg => {
+    const roomsJoined = Array.from(socket.rooms).filter(r => r !== socket.id);
+    roomsJoined.forEach(r => {
+      socket.to(r).emit("chat message", { user: "Unknown", text: msg });
+    });
   });
 
-  // File sharing
-  socket.on("file upload", data=>{
-    const roomsJoined = Array.from(socket.rooms).filter(r=>r!==socket.id);
-    roomsJoined.forEach(r=>socket.to(r).emit("file message",{user:"Unknown",...data}));
+  // File upload
+  socket.on("file upload", data => {
+    const roomsJoined = Array.from(socket.rooms).filter(r => r !== socket.id);
+    roomsJoined.forEach(r => {
+      socket.to(r).emit("file message", { user: "Unknown", ...data });
+    });
   });
 
-  // Typing
-  socket.on("typing", user=>{
-    const roomsJoined = Array.from(socket.rooms).filter(r=>r!==socket.id);
-    roomsJoined.forEach(r=>socket.to(r).emit("typing", user));
+  // Typing indicator
+  socket.on("typing", user => {
+    const roomsJoined = Array.from(socket.rooms).filter(r => r !== socket.id);
+    roomsJoined.forEach(r => socket.to(r).emit("typing", user));
   });
-  socket.on("stop typing", user=>{
-    const roomsJoined = Array.from(socket.rooms).filter(r=>r!==socket.id);
-    roomsJoined.forEach(r=>socket.to(r).emit("stop typing", user));
+
+  socket.on("stop typing", user => {
+    const roomsJoined = Array.from(socket.rooms).filter(r => r !== socket.id);
+    roomsJoined.forEach(r => socket.to(r).emit("stop typing", user));
+  });
+
+  // Disconnect handling
+  socket.on("disconnect", () => {
+    for (const r in rooms) {
+      rooms[r].users = rooms[r].users.filter(u => u !== socket.id);
+    }
   });
 
 });
 
-http.listen(3000, ()=>console.log("Server running on port 3000"));
+const PORT = process.env.PORT || 3000;
+http.listen(PORT, () => console.log(`Server running on port ${PORT}`));
