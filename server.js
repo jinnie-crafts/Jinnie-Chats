@@ -1,77 +1,56 @@
 const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
-const path = require("path");
-
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
+const http = require("http").createServer(app);
+const io = require("socket.io")(http);
 
-// In-memory rooms and messages
-// Structure: rooms = { roomName: [messageObj, ...] }
-const rooms = {};
+app.use(express.static("public"));
 
-app.use(express.static(path.join(__dirname, "public")));
+const rooms = {}; // { roomName: { password, users: [] } }
 
-io.on("connection", (socket) => {
-  console.log("A user connected");
+io.on("connection", socket => {
 
-  // Send existing room list to new client
-  socket.emit("room list", Object.keys(rooms));
-
-  // User joins a room
-  socket.on("join room", (roomName, username) => {
-    socket.username = username || "Anonymous";
-    socket.room = roomName;
-
-    // Create room if it doesn't exist
-    if (!rooms[roomName]) rooms[roomName] = [];
-
+  // Create Room
+  socket.on("create room", (roomName,password,username)=>{
+    if(!rooms[roomName]) rooms[roomName]={password,users:[]};
     socket.join(roomName);
-
-    // Send existing messages for this room
-    socket.emit("chat history", rooms[roomName]);
-
-    // Notify room about new user
-    io.to(roomName).emit("user joined", socket.username);
-
-    // Update room list for all clients
+    rooms[roomName].users.push(username);
+    socket.emit("room joined", roomName);
+    socket.to(roomName).emit("chat message", `${username} has joined the chat`);
     io.emit("room list", Object.keys(rooms));
   });
 
+  // Join Room
+  socket.on("join room request", (roomName,password,username)=>{
+    if(!rooms[roomName]) return socket.emit("error","Room does not exist");
+    if(rooms[roomName].password !== password) return socket.emit("wrong password");
+    socket.join(roomName);
+    rooms[roomName].users.push(username);
+    socket.emit("room joined", roomName);
+    socket.to(roomName).emit("chat message", `${username} has joined the chat`);
+  });
+
   // Chat messages
-  socket.on("chat message", (msg) => {
-    const roomName = socket.room;
-    if (!roomName) return;
-
-    const messageData = { user: socket.username, text: msg, timestamp: new Date() };
-    rooms[roomName].push(messageData);
-
-    io.to(roomName).emit("chat message", messageData);
+  socket.on("chat message", msg=>{
+    const roomsJoined = Array.from(socket.rooms).filter(r=>r!==socket.id);
+    roomsJoined.forEach(r=>socket.to(r).emit("chat message",{user:"Unknown",text:msg}));
   });
 
-  // File upload
-  socket.on("file upload", (data) => {
-    const roomName = socket.room;
-    if (!roomName) return;
-
-    const fileMessage = { user: socket.username, ...data, timestamp: new Date() };
-    rooms[roomName].push(fileMessage);
-
-    io.to(roomName).emit("file upload", fileMessage);
+  // File sharing
+  socket.on("file upload", data=>{
+    const roomsJoined = Array.from(socket.rooms).filter(r=>r!==socket.id);
+    roomsJoined.forEach(r=>socket.to(r).emit("file message",{user:"Unknown",...data}));
   });
 
-  // Typing indicators
-  socket.on("typing", (user) => socket.to(socket.room).emit("typing", user));
-  socket.on("stop typing", (user) => socket.to(socket.room).emit("stop typing", user));
-
-  // Disconnect
-  socket.on("disconnect", () => {
-    if (socket.room && socket.username) {
-      io.to(socket.room).emit("user left", socket.username);
-    }
+  // Typing
+  socket.on("typing", user=>{
+    const roomsJoined = Array.from(socket.rooms).filter(r=>r!==socket.id);
+    roomsJoined.forEach(r=>socket.to(r).emit("typing", user));
   });
+  socket.on("stop typing", user=>{
+    const roomsJoined = Array.from(socket.rooms).filter(r=>r!==socket.id);
+    roomsJoined.forEach(r=>socket.to(r).emit("stop typing", user));
+  });
+
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+http.listen(3000, ()=>console.log("Server running on port 3000"));
