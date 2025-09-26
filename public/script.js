@@ -124,3 +124,9 @@ socket.on("room joined", roomName=>{
   chatTitle.textContent = "Jinnie Chat";
   chatSubtitle.textContent = `Room: ${room} (${username})`;
 });
+window.addEventListener("load", () => {
+  const splash = document.getElementById("splash-screen");
+  setTimeout(() => {
+    splash.classList.add("fade-out");
+  }, 1200); // shows for 1.2s before fading
+});
