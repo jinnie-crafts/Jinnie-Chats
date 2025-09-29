@@ -291,11 +291,11 @@ socket.on("stop typing", user => {
    Send message & input
    ---------------------- */
 sendBtn.addEventListener("click", () => {
-  const text = messageInput.value.trim();
-  if (!text) return;
-  addMessage(username, text);
-  socket.emit("chat message", text);
-  messageInput.value = "";
+  const msg = input.value.trim();
+  if (!msg) return;
+  // addMessage(username, text);
+  socket.emit("chat message", msg);  //only send, dont add message here
+  input.value = "";
   socket.emit("stop typing", username);
 });
 messageInput.addEventListener("keypress", e => {
