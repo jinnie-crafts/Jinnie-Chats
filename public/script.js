@@ -265,14 +265,6 @@ function escapeHtml(s) {
 /* ----------------------
    Socket chat/file/typing handlers
    ---------------------- */
-socket.on("chat message", data => {
-  if (!data) return;
-  if (typeof data === "string") {
-    addMessage("System", data);
-  } else if (data.user && data.text) {
-    addMessage(data.user, data.text);
-  }
-});
 socket.on("file message", data => {
   addFileMessage(data.user || "Unknown", data);
 });
@@ -293,18 +285,45 @@ socket.on("stop typing", user => {
 sendBtn.addEventListener("click", () => {
   const msg = messageInput.value.trim();
   if (!msg) return;
-  // addMessage(username, text);
-  socket.emit("chat message", msg);  //only send, dont add message here
-  messageInput.value = ""; //clear input after sending
+  socket.emit("chat message", msg);  // only send
+  messageInput.value = ""; // clear input
   socket.emit("stop typing", username);
 });
+
 messageInput.addEventListener("keypress", e => {
-  if (e.key === "Enter") {
-    sendBtn.click(); //trigger send Button
-  } else {
+  if (e.key === "Enter") sendBtn.click();
+  else {
     socket.emit("typing", username);
     clearTimeout(typingTimeout);
     typingTimeout = setTimeout(() => socket.emit("stop typing", username), 900);
+  }
+});
+
+/* ----------------------
+   Receive chat message
+   ---------------------- */
+socket.on("chat message", data => {
+  if (!data) return;
+
+  if (typeof data === "string") {
+    addMessage("System", data);
+  } else if (data.user && data.text) {
+    addMessage(data.user, data.text);
+
+    // play sound if tab inactive
+    if (!isTabActive) {
+      const audio = new Audio("notification.mp3");
+      audio.play();
+    }
+
+    // show desktop notification
+    if (!isTabActive && Notification.permission === "granted") {
+      const notification = new Notification(`${data.user} sent a message`, {
+        body: data.text,
+        icon: "logo.png"
+      });
+      notification.onclick = () => window.focus();
+    }
   }
 });
 
@@ -380,18 +399,6 @@ socket.on("connect", () => {
    ---------------------- */
 setTimeout(adjustChatPadding, 300);
 
-
-//chat input section stuck at bottom
-// const chatBody = document.getElementById("chat-body");
-// const chatInput = document.querySelector(".chat-input");
-
-// function adjustChatBody() {
-//   chatBody.style.marginBottom = chatInput.offsetHeight + "px";
-// }
-// window.addEventListener("resize", adjustChatBody);
-// adjustChatBody();
-
-
 //notification
 if ("Notification" in window) {
   Notification.requestPermission().then(permission => {
@@ -405,28 +412,3 @@ let isTabActive = true;
 document.addEventListener("visibilitychange", () => {
   isTabActive = !document.hidden;
 });
-
-
-//show notification on new message
-socket.on("chat message", data => {
-  // Add message to chat UI as usual
-  addMessage(data.user, data.text);
-
-  // Show notification if tab is inactive
-  if (!isTabActive && Notification.permission === "granted") {
-    const notification = new Notification(`${data.user} sent a message`, {
-      body: data.text,
-      icon: "logo.png" // optional: your app logo
-    });
-
-    // Optional: click on notification brings user to tab
-    notification.onclick = () => window.focus();
-  }
-});
-
-
-//play notification sound on mobile devices
-if (!isTabActive) {
-  const audio = new Audio("notification.mp3");
-  audio.play();
-}
