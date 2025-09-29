@@ -291,16 +291,16 @@ socket.on("stop typing", user => {
    Send message & input
    ---------------------- */
 sendBtn.addEventListener("click", () => {
-  const msg = input.value.trim();
+  const msg = messageInput.value.trim();
   if (!msg) return;
   // addMessage(username, text);
   socket.emit("chat message", msg);  //only send, dont add message here
-  input.value = "";
+  messageInput.value = ""; //clear input after sending
   socket.emit("stop typing", username);
 });
 messageInput.addEventListener("keypress", e => {
   if (e.key === "Enter") {
-    sendBtn.click();
+    sendBtn.click(); //trigger send Button
   } else {
     socket.emit("typing", username);
     clearTimeout(typingTimeout);
@@ -390,3 +390,43 @@ setTimeout(adjustChatPadding, 300);
 // }
 // window.addEventListener("resize", adjustChatBody);
 // adjustChatBody();
+
+
+//notification
+if ("Notification" in window) {
+  Notification.requestPermission().then(permission => {
+    console.log("Notification permission:", permission);
+  });
+}
+
+//page visibility that check tab is open or not
+let isTabActive = true;
+
+document.addEventListener("visibilitychange", () => {
+  isTabActive = !document.hidden;
+});
+
+
+//show notification on new message
+socket.on("chat message", data => {
+  // Add message to chat UI as usual
+  addMessage(data.user, data.text);
+
+  // Show notification if tab is inactive
+  if (!isTabActive && Notification.permission === "granted") {
+    const notification = new Notification(`${data.user} sent a message`, {
+      body: data.text,
+      icon: "logo.png" // optional: your app logo
+    });
+
+    // Optional: click on notification brings user to tab
+    notification.onclick = () => window.focus();
+  }
+});
+
+
+//play notification sound on mobile devices
+if (!isTabActive) {
+  const audio = new Audio("notification.mp3");
+  audio.play();
+}
