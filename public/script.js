@@ -379,3 +379,14 @@ socket.on("connect", () => {
    initial padding call
    ---------------------- */
 setTimeout(adjustChatPadding, 300);
+
+
+//chat input section stuck at bottom
+// const chatBody = document.getElementById("chat-body");
+// const chatInput = document.querySelector(".chat-input");
+
+// function adjustChatBody() {
+//   chatBody.style.marginBottom = chatInput.offsetHeight + "px";
+// }
+// window.addEventListener("resize", adjustChatBody);
+// adjustChatBody();
