@@ -8,11 +8,32 @@
 
 /* Splash */
 #splash-screen {
-  position: fixed; inset:0; background: var(--green); display:flex; align-items:center; justify-content:center; z-index:9999;
-  transition: opacity .6s ease, visibility .6s ease;
+  position: fixed; 
+  inset:0; 
+  background: var(--green); 
+  display:flex; 
+  align-items:center; 
+  justify-content:center; 
+  z-index:9999;
+  transition: opacity 1s ease, visibility .6s ease;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
-#splash-screen.fade-out { opacity:0; visibility:hidden; }
+#splash-screen.fade-out { opacity:0; visibility:hidden; pointer-events: none; }
 #splash-logo { width:140px; height:auto; filter: drop-shadow(0 6px 18px rgba(0,0,0,0.25)); }
+
+
+/* ===== Splash Screen ===== */
+
+#splash-screen img {
+  width: 40vw;          /* responsive: 40% of viewport width */
+  max-width: 280px;     /* don’t get too huge on desktop */
+  min-width: 120px;     /* don’t shrink too small on mobile */
+  height: auto;
+}
+
 
 /* Modals */
 .modal { position: fixed; inset:0; display:flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.35); z-index:2000; }
