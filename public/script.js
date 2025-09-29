@@ -288,6 +288,10 @@ sendBtn.addEventListener("click", () => {
   socket.emit("chat message", msg);  // only send
   messageInput.value = ""; // clear input
   socket.emit("stop typing", username);
+  //keep keyboard open on mobile
+    if (/Mobi|Android/i.test(navigator.userAgent)) {
+    setTimeout(() => messageInput.focus(), 50); // refocus input
+  }
 });
 
 messageInput.addEventListener("keypress", e => {
